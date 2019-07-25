@@ -1,8 +1,8 @@
 #!/usr/bin/env bash -e
 
 # Note: use lowercase names for the Docker images
-DOCKER_IMAGE="azureiotpcs/pcs-remote-monitoring-webui"
+DOCKER_IMAGE="rbachala/pcs-remote-monitoring-webui"
 # "testing" is the latest dev build, usually matching the code in the "master" branch
-DOCKER_TAG="$DOCKER_IMAGE:testing"
+DOCKER_TAG="$DOCKER_IMAGE:1.0.1"
 
 docker push $DOCKER_TAG

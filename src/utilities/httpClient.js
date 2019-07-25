@@ -15,7 +15,7 @@ export class HttpClient {
    *
    * @param {string} url The url path to the make the request to
    */
-  static get(url, options = {}, withAuth = true) {
+  static get(url, options = {}, withAuth = false) {
     return HttpClient.ajax(url, { ...options, method: 'GET' }, withAuth);
   }
 
@@ -24,7 +24,8 @@ export class HttpClient {
    *
    * @param {string} url The url path to the make the request to
    */
-  static post(url, body = {}, options = {}, withAuth = true) {
+  static post(url, body = {}, options = {}, withAuth = false) {
+    console.log("here");
     return HttpClient.ajax(url, { ...options, body, method: 'POST' }, withAuth);
   }
 
@@ -33,7 +34,7 @@ export class HttpClient {
    *
    * @param {string} url The url path to the make the request to
    */
-  static put(url, body = {}, options = {}, withAuth = true) {
+  static put(url, body = {}, options = {}, withAuth = false) {
     return HttpClient.ajax(url, { ...options, body, method: 'PUT' }, withAuth);
   }
 
@@ -42,7 +43,7 @@ export class HttpClient {
    *
    * @param {string} url The url path to the make the request to
    */
-  static patch(url, body = {}, options = {}, withAuth = true) {
+  static patch(url, body = {}, options = {}, withAuth = false) {
     return HttpClient.ajax(url, { ...options, body, method: 'PATCH' }, withAuth);
   }
 
@@ -51,10 +52,24 @@ export class HttpClient {
    *
    * @param {string} url The url path to the make the request to
    */
-  static delete(url, body = {}, options = {}, withAuth = true) {
+  static delete(url, body = {}, options = {}, withAuth = false) {
     return HttpClient.ajax(url, { ...options, body, method: 'DELETE' }, withAuth);
   }
 
+  static simplePost(url,body = {}){
+    //const bearerToken = Config.bearerToken;
+    window.fetch(url, {
+      method: 'POST', 
+      headers: {
+          'Content-Type': 'application/json',
+          'Csrf-Token': 'nocheck'
+      },
+      redirect: 'follow', // manual, *follow, error
+      referrer: 'no-referrer', // no-referrer, *client
+      body:body, // body data type must match "Content-Type" header
+  })
+  .then(response => response.json());
+  }
   /**
    * Constructs an Ajax request
    *
@@ -63,7 +78,7 @@ export class HttpClient {
    * @param {boolean} withAuth Allows a backdoor to not avoid wrapping auth headers
    * @return an Observable of the AjaxReponse
    */
-  static ajax(url, options = {}, withAuth = true) {
+  static ajax(url, options = {}, withAuth = false) {
     const { retryWaitTime, maxRetryAttempts } = Config;
     return HttpClient.createAjaxRequest({ ...options, url }, withAuth)
       .flatMap(Observable.ajax)
@@ -83,11 +98,13 @@ export class HttpClient {
    * A helper method for constructing ajax request objects
    */
   static createAjaxRequest(options, withAuth) {
-    return (withAuth ? AuthService.getAccessToken() : Observable.of(null))
+    // const bearerToken = Config.bearerToken;
+    
+    return (AuthService.getAccessToken())
       .map(token => ({ // Create the final headers options
         ...jsonHeaders,
         ...(options.headers || {}),
-        ...(token ? authenticationHeaders(token) : {})
+        ...(authenticationHeaders(token))
       }))
       .map(({ 'Content-Type': contentType, ...headers }) => {
         if (contentType) return { ...headers, 'Content-Type': contentType };

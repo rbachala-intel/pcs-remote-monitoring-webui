@@ -20,6 +20,7 @@ export const toDeviceModel = (device = {}) => {
     'properties.reported.supportedMethods': 'methods',
     'properties.reported.telemetry': 'telemetry',
     'properties.reported.type': 'type',
+    'properties.reported.amtGuid': 'amtGuid',
     'properties.reported.firmware.currentFwVersion': 'currentFwVersion',
     'properties.reported.firmware.lastFwUpdateStartTime': 'lastFwUpdateStartTime',
     'properties.reported.firmware.lastFwUpdateEndTime': 'lastFwUpdateEndTime',

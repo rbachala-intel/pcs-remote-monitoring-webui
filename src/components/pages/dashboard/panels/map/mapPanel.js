@@ -5,6 +5,8 @@ import update from 'immutability-helper';
 
 import Config from 'app.config';
 import { AjaxError, Indicator } from 'components/shared';
+import { HttpClient } from 'utilities/httpClient';
+import uuid from 'uuid/v4';
 import {
   Panel,
   PanelHeader,
@@ -24,15 +26,25 @@ const nominalDeviceLayer = 'devices-nominal-layer';
 const warningDevicesLayer = 'devices-warning-layer';
 const criticalDevicesLayer = 'devices-critical-layer';
 
-const deviceToMapPin = ({ id, properties, type }) =>
+const ENDPOINT = Config.serviceUrls.iotHubManager;
+
+const deviceToMapPin = ({ id, properties, type, amtGuid }) =>
   new AzureMaps.data.Feature(
     new AzureMaps.data.Point([properties.Longitude, properties.Latitude]),
     {
       id,
       address: properties.location || '',
-      type
+      type,
+      amtGuid
     }
   );
+
+const deviceControlActions = {
+  START  : 2,
+  STOP   : 8,
+  REBOOT : 10
+};
+
 
 export class MapPanel extends Component {
 
@@ -74,8 +86,29 @@ export class MapPanel extends Component {
     this.calculatePins(this.props, true);
   }
 
+  controlDevice(id, guid, state){
+    console.log(`send ${state} for device ${id} with amtid ${guid}`)
+    let job = {
+          JobId: "AMTAction-" + uuid(),     
+          MaxExecutionTimeInSeconds: 0,    
+          Type: 5,     
+          QueryCondition: guid,     
+          MethodParameter: {         
+            JsonPayload: `{"Action": ${state}}`     
+          } 
+    }
+    let json = JSON.stringify(job);
+
+    HttpClient.simplePost(`${ENDPOINT}jobs`,json);
+  }
+  
+  getButtonColorClass(classname){
+    return `device-control-btn-${classname}`;
+  }
+
   buildDevicePopup = (properties, classname) => {
     const popupContentBox = document.createElement('div');
+    console.log("Properties for device ", properties);
     popupContentBox.classList.add('popup-content-box');
     popupContentBox.classList.add(classname);
 
@@ -87,8 +120,42 @@ export class MapPanel extends Component {
     name.classList.add('popup-device-name');
     name.innerText = properties.id;
 
+    const startButton = document.createElement('button');
+    startButton.classList.add('device-control-btn');
+    startButton.classList.add(this.getButtonColorClass(classname));
+    startButton.innerText = "Start"
+    startButton.onclick =  (e) => {
+      e.preventDefault();
+      this.controlDevice(properties.id, properties.amtGuid, deviceControlActions.START);
+    }
+
+    const stopButton = document.createElement('button');
+    stopButton.classList.add('device-control-btn');
+    stopButton.classList.add(this.getButtonColorClass(classname));
+    stopButton.innerText = "Stop"
+    stopButton.onclick =  (e) => {
+      e.preventDefault();
+      this.controlDevice(properties.id, properties.amtGuid, deviceControlActions.STOP);
+    }
+
+    const rebootButton = document.createElement('button');
+    rebootButton.classList.add('device-control-btn');
+    rebootButton.classList.add(this.getButtonColorClass(classname));
+    rebootButton.innerText = "Reboot"
+    rebootButton.onclick = (e) => {
+      e.preventDefault();
+      this.controlDevice(properties.id, properties.amtGuid, deviceControlActions.REBOOT);
+    }
+
+    const deviceControl = document.createElement('div');
+    deviceControl.classList.add('popup-device-control');
+    deviceControl.appendChild(startButton);
+    deviceControl.appendChild(stopButton);
+    deviceControl.appendChild(rebootButton);
+
     popupContentBox.appendChild(type);
     popupContentBox.appendChild(name);
+    popupContentBox.appendChild(deviceControl);
 
     popupContentBox.onclick = () => {
       // Check this to void any potential attempts to reference the component after unmount
